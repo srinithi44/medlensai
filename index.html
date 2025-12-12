@@ -53,8 +53,14 @@
   }
 }
 </script>
+<!-- Polyfill for process.env to prevent crashes in browser environments -->
+<script>
+  window.process = window.process || { env: { API_KEY: '' } };
+</script>
 </head>
   <body class="bg-slate-50 text-slate-900 font-sans antialiased">
     <div id="root"></div>
+    <!-- Main Entry Point for React App - Critical for Netlify Deployment -->
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
