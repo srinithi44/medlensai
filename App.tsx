@@ -27,7 +27,7 @@ const LoginPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-100 flex items-center justify-center">
             <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-                <h1 className="text-3xl font-bold text-center text-slate-800 mb-2"><span className="text-primary">Med</span>Lens</h1>
+                <h1 className="text-3xl font-bold text-center text-slate-800 mb-2"><span className="text-primary">Med</span>Lens AI</h1>
                 <p className="text-center text-slate-500 mb-8">Secure Clinical AI Workspace</p>
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div>

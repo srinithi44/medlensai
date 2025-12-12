@@ -24,9 +24,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       <aside className="w-full md:w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col">
         <div className="p-6 border-b border-slate-700">
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <span className="text-primary">Med</span>Lens
+            <span className="text-primary">Med</span>Lens AI
           </h1>
-          <p className="text-xs text-slate-400 mt-1">AI Clinical Assistant</p>
+          <p className="text-xs text-slate-400 mt-1">Intelligent Clinical Assistant</p>
         </div>
         
         <nav className="p-4 space-y-2 flex-1">

@@ -127,7 +127,7 @@ export const ReportViewer: React.FC = () => {
         // Header
         doc.setFontSize(22);
         doc.setTextColor(14, 165, 233); // Primary Blue
-        doc.text("MedLens", margin, y);
+        doc.text("MedLens AI", margin, y);
         y += 6;
         
         doc.setFontSize(10);
