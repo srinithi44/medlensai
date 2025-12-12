@@ -92,14 +92,17 @@ export const analyzeMedicalImage = async (file: ReportFile, language: string = '
   console.log(`[MedLens ML] Analyzing file: ${file.name} in ${language}`);
 
   // 1. Check for API Key
-  if (!process.env.API_KEY) {
+  // Supports process.env (Build) or window.MEDLENS_API_KEY (Runtime Injection)
+  const apiKey = process.env.API_KEY || (window as any).MEDLENS_API_KEY;
+
+  if (!apiKey) {
     console.warn("[MedLens] No valid API_KEY found. Using simulation.");
     return simulateAnalysis(file, language);
   }
 
   try {
     // 2. Initialize Gemini
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: apiKey });
     
     // 3. Prepare Image Data
     const base64Data = file.url.split(',')[1];
@@ -227,44 +230,37 @@ const mapModelResponseToApp = (data: any, fileId: string): AnalysisResult => {
 
 // --- MOCK SIMULATION (Fallback) ---
 const simulateAnalysis = async (file: ReportFile, language: string): Promise<AnalysisResult> => {
-  await delay(2500); 
+  await delay(2000); 
   
-  const isTamil = language.toLowerCase() === 'tamil';
-
-  // Simulated response
+  // Generic fallback message so user knows AI is offline
+  const fallbackMsg = "DEMO MODE: API Key Missing. Real AI analysis is disabled.";
+  
   const mockData = {
-      file_type: "prescription",
-      summary_patient: isTamil 
-        ? "இது லிசினோபிரில் 10 மி.கி மருந்துக்கான சீட்டு." 
-        : "This is a prescription for Lisinopril 10mg.",
-      summary_student: isTamil
-        ? "நோயாளியின் விவரங்கள் மற்றும் மருந்து வழிமுறைகள் அடங்கிய கையால் எழுதப்பட்ட ஆவணம்."
-        : "Handwritten prescription document containing patient details.",
-      summary_doctor: "Standard prescription format. Confirmed Lisinopril 10mg script.",
+      file_type: "document_scan",
+      summary_patient: fallbackMsg,
+      summary_student: "The system is currently running in simulation mode because a valid Google Gemini API Key was not found in the environment configuration.",
+      summary_doctor: "SIMULATION: No Inference Performed. Please configure process.env.API_KEY to enable Gemini 2.5 Flash analysis.",
       
-      summary_patient_en: "This is a prescription for Lisinopril 10mg.",
-      summary_student_en: "Handwritten prescription document containing patient details.",
-      summary_doctor_en: "Standard prescription format. Confirmed Lisinopril 10mg script.",
+      summary_patient_en: fallbackMsg,
+      summary_student_en: "The system is currently running in simulation mode because a valid Google Gemini API Key was not found in the environment configuration.",
+      summary_doctor_en: "SIMULATION: No Inference Performed. Please configure process.env.API_KEY to enable Gemini 2.5 Flash analysis.",
 
       highlights: {
         regions_of_interest: [
-            { label: "Medication", description: "Lisinopril text", confidence: 0.95, box_2d: [30, 10, 45, 50] },
-            { label: "Dosage", description: "10mg", confidence: 0.92, box_2d: [30, 55, 45, 85] }
+            { label: "System Status", description: "Offline / Demo Mode", confidence: 1.0, box_2d: [10, 10, 90, 90] }
         ],
         artifacts: []
       },
-      recommendations_patient: isTamil 
-        ? ["இந்த மருந்தைப் பற்றி ஏதேனும் சந்தேகம் இருந்தால் மருந்தாளரிடம் கேளுங்கள்."]
-        : ["Please check with your pharmacist."],
+      recommendations_patient: ["Contact Administrator to configure API Key."],
       recommendations_student: [],
       recommendations_doctor: [],
 
-      recommendations_patient_en: ["Please check with your pharmacist."],
+      recommendations_patient_en: ["Contact Administrator to configure API Key."],
       recommendations_student_en: [],
       recommendations_doctor_en: [],
 
-      confidence_overall: 0.94,
-      disclaimer: "NOT MEDICAL ADVICE"
+      confidence_overall: 0.0,
+      disclaimer: "SIMULATION ONLY"
   };
 
   return mapModelResponseToApp(mockData, file.id);
