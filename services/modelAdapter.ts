@@ -88,12 +88,36 @@ export interface AnalysisResult {
   recommendationsDoctorEn: string[];
 }
 
+// Robust API Key Retrieval
+export const getApiKey = (): string => {
+    // 1. Try LocalStorage (User entered via Admin Panel) - Highest Priority for Netlify
+    const localKey = localStorage.getItem('MEDLENS_API_KEY');
+    if (localKey && localKey.trim().length > 0) {
+        return localKey.trim();
+    }
+
+    // 2. Try Runtime Injection (window.MEDLENS_API_KEY)
+    if ((window as any).MEDLENS_API_KEY) {
+        return (window as any).MEDLENS_API_KEY;
+    }
+
+    // 3. Try Environment Variable (Build time)
+    // We wrap this in a try-catch because referencing process in some browser environments can throw
+    try {
+        if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+            return process.env.API_KEY;
+        }
+    } catch (e) {
+        // ignore reference errors
+    }
+
+    return '';
+};
+
 export const analyzeMedicalImage = async (file: ReportFile, language: string = 'English'): Promise<AnalysisResult> => {
   console.log(`[MedLens ML] Analyzing file: ${file.name} in ${language}`);
 
-  // 1. Check for API Key
-  // Supports process.env (Build) or window.MEDLENS_API_KEY (Runtime Injection)
-  const apiKey = process.env.API_KEY || (window as any).MEDLENS_API_KEY;
+  const apiKey = getApiKey();
 
   if (!apiKey) {
     console.warn("[MedLens] No valid API_KEY found. Using simulation.");
@@ -148,11 +172,17 @@ export const analyzeMedicalImage = async (file: ReportFile, language: string = '
     
     // enhance error message
     let errorMessage = "An unexpected error occurred during analysis.";
-    if (error.message.includes("API_KEY")) errorMessage = "System Configuration Error: API Key is invalid or missing.";
-    else if (error.message.includes("fetch")) errorMessage = "Network Error: Could not connect to MedLens servers.";
-    else if (error.message.includes("400")) errorMessage = "The image format is not supported or corrupted.";
-    else if (error.message.includes("503")) errorMessage = "The AI service is currently overloaded. Please try again in a moment.";
-    else errorMessage = error.message;
+    if (error.message.includes("API key not valid") || error.message.includes("API_KEY")) {
+        errorMessage = "Invalid API Key. Please update it in the Admin Configuration.";
+    } else if (error.message.includes("fetch")) {
+        errorMessage = "Network Error: Could not connect to Google AI services.";
+    } else if (error.message.includes("400")) {
+        errorMessage = "The image format is not supported or corrupted.";
+    } else if (error.message.includes("503")) {
+        errorMessage = "The AI service is currently overloaded. Please try again in a moment.";
+    } else {
+        errorMessage = error.message;
+    }
     
     throw new Error(errorMessage);
   }
@@ -230,32 +260,33 @@ const mapModelResponseToApp = (data: any, fileId: string): AnalysisResult => {
 
 // --- MOCK SIMULATION (Fallback) ---
 const simulateAnalysis = async (file: ReportFile, language: string): Promise<AnalysisResult> => {
-  await delay(2000); 
+  await delay(1500); 
   
-  // Generic fallback message so user knows AI is offline
-  const fallbackMsg = "DEMO MODE: API Key Missing. Real AI analysis is disabled.";
+  // Explicit Instruction Message
+  const fallbackMsg = "⚠️ DEMO MODE: REAL AI IS DISABLED.";
+  const instructionMsg = "To enable Real AI Analysis: Go to Admin Panel > Configuration > API Key Management and enter your Gemini API Key.";
   
   const mockData = {
-      file_type: "document_scan",
+      file_type: "demo_simulation",
       summary_patient: fallbackMsg,
-      summary_student: "The system is currently running in simulation mode because a valid Google Gemini API Key was not found in the environment configuration.",
-      summary_doctor: "SIMULATION: No Inference Performed. Please configure process.env.API_KEY to enable Gemini 2.5 Flash analysis.",
+      summary_student: instructionMsg,
+      summary_doctor: "MISSING_API_KEY: The application is running in Simulation Mode because no API Key was found in LocalStorage or Environment Variables.",
       
       summary_patient_en: fallbackMsg,
-      summary_student_en: "The system is currently running in simulation mode because a valid Google Gemini API Key was not found in the environment configuration.",
-      summary_doctor_en: "SIMULATION: No Inference Performed. Please configure process.env.API_KEY to enable Gemini 2.5 Flash analysis.",
+      summary_student_en: instructionMsg,
+      summary_doctor_en: "MISSING_API_KEY: The application is running in Simulation Mode because no API Key was found in LocalStorage or Environment Variables.",
 
       highlights: {
         regions_of_interest: [
-            { label: "System Status", description: "Offline / Demo Mode", confidence: 1.0, box_2d: [10, 10, 90, 90] }
+            { label: "Configuration Error", description: "API Key Not Found", confidence: 1.0, box_2d: [10, 10, 90, 90] }
         ],
         artifacts: []
       },
-      recommendations_patient: ["Contact Administrator to configure API Key."],
+      recommendations_patient: ["Go to Admin Page", "Click Configuration Tab", "Enter API Key"],
       recommendations_student: [],
       recommendations_doctor: [],
 
-      recommendations_patient_en: ["Contact Administrator to configure API Key."],
+      recommendations_patient_en: ["Go to Admin Page", "Click Configuration Tab", "Enter API Key"],
       recommendations_student_en: [],
       recommendations_doctor_en: [],
 
