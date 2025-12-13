@@ -1,3 +1,6 @@
+This project was submitted to the Kaggle Gemini-3 Competition.
+
+
 # MedLens: Explainable AI Medical Assistant
 
 ## Overview
